@@ -1,0 +1,119 @@
+{
+    "title":
+    {
+        "name":"h1",
+        "attrs":{"class":["highwire-cite-title"]}
+    },
+    "keywords": {
+        "name": "",
+        "attrs": {"class": null}
+    },
+    "references": {
+        "sections": {
+            "title": {
+                "name": "h2",
+                "attrs": {"class":  ""}
+            },
+            "journal": {
+                "name": "abbr",
+                "attrs": {"class":  "cit-jnl-abbrev"}
+            },
+            "volume": {
+                "name": "span",
+                "attrs": {"class":  "cit-vol"}
+            }
+        },
+        "defined":[
+            {
+                "name": ["div"],
+                "attrs": {"class": ["cit-metadata"]}
+            },
+            {
+                "name": "li",
+                "attrs": {}
+            }
+        ],
+        "regex": [
+            {
+                "name": "div",
+                "attrs": "id",
+                "regex": "^cit?[-]\\d+[v]?\\d+[.]\\d+$"
+            }
+        ]
+    },
+
+    "heading":
+    {
+        "name":"h2",
+        "attrs":{"class":""}
+    },
+    "heading2":
+    {
+        "name":"h3",
+        "attrs":{"class":null}
+    },
+    "sections":
+    {
+        "name":"div",
+        "attrs":{"class":"section"}
+    },
+    "subsections": {
+        "name":"div",
+        "attrs":{"class":"subsection"}
+    },
+    "paragraphs": {
+        "name": "p",
+        "regex":[
+            {
+                "attrs": "id",
+                "regex": "^[pP][-]\\d+$"
+            }
+        ]
+
+    },
+    "table-container": {
+        "name": "div",
+        "attrs": {"class":  "table"},
+        "caption": {
+            "name": "div",
+            "attrs": {"class": "table-caption"}
+        }
+    },
+    "figure": {
+        "name": "div",
+        "attrs": {"class": "fig"},
+        "caption": {
+            "name": "div",
+            "attrs": {"class": "fig-caption"}
+        }
+    },
+    "table":
+    {
+        "name":"div",
+        "attrs":{"class":"table-inline"}
+    },
+    "table_caption": {
+        "name": "p",
+        "attrs": {"class": "first-child"}
+    },
+    "table_title":
+    {
+        "name":"span",
+        "attrs":{"class":"table-label"}
+    },
+    "table_header":
+    {
+        "name":"div",
+        "attrs":{"class":"callout"}
+    },
+    "table_row":
+    {
+        "name":"ul",
+        "attrs":{"class":"callout-links"}
+    },
+    "table_header_element":
+    {
+        "name":"li",
+        "attrs":{"class":["view-inline","view-popup"]}
+    }
+}
