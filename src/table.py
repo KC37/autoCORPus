@@ -322,6 +322,45 @@ class table:
 				table['identifier'] += '.{}'.format(table_idx+1)
 		return tables
 
+	def __table2json4prep(self, table_num, title, footer, caption):
+		"""
+		transform tables from nested lists to JSON
+
+		Args:
+		    table_num: table number
+		    caption: table caption
+		    footer: table footer
+
+		Returns:
+		    tables: tables in JSON format
+
+		"""
+		tables = []
+		sections = []
+		cur_table = {}
+
+		pre_header = []
+		cur_header = ''
+
+		if cur_header!=pre_header:
+		    sections = []
+		    cur_table = {'identifier':str(table_num+1),
+				 'title':title,
+				 'caption': caption,
+				 'columns':cur_header,
+				 'section':sections,
+				 'footer':footer}
+		    tables.append(cur_table)
+		elif cur_header==pre_header:
+		    cur_table['section'] = sections
+
+		pre_header = cur_header
+
+		if len(tables)>1:
+		    for table_idx,table in enumerate(tables):
+			table['identifier'] += '.{}'.format(table_idx+1)
+		return tables
+	
 	def __reformat_table_json(self, table_json):
 		bioc_format = {
 			"source": "Auto-CORPus table processing",
@@ -446,7 +485,132 @@ class table:
 				offset += len("".join(table["footer"]))
 			bioc_format["documents"].append(tableDict)
 		return bioc_format
+        
+	def __reformat_table_json4prep(self, table_json):
+		bioc_format = {
+		    "source": "Auto-CORPus table processing",
+		    "date": f'{datetime.today().strftime("%Y%m%d")}',
+		    "key": "auto-corpus-table.key",
+		    "infons": {},
+		    "documents":[]
+		}
 
+		for table in table_json['tables']:
+		    offset = 0
+		    tableDict = {
+			"file": self.file_name,
+			"id": F"T{self.tableIdentifier if self.tableIdentifier else table['identifier']}",
+			"infons": {},
+			"passages":[
+			    {
+				"offset": 0,
+				"infons":{
+				    "section_type": [
+					{"type": "table_title",
+					"IAO_name": "document title",
+					 "IAO_id": "IAO:0000305"
+					 }
+				    ]
+				},
+				"text": table['title'],
+				"sentences": [],
+				"annotations": [],
+				"relations": []
+			    }
+			],
+			"annotations": [],
+			"relations": []
+		    }
+		    offset += len(table['title'])
+		    if "caption" in table.keys():
+			tableDict['passages'].append(
+			    {
+				"offset": offset,
+				"infons":{
+				    "section_type":[
+					{
+					    "type": "table_caption",
+					    "IAO_name": "caption",
+					    "IAO_id": "IAO:0000304"
+					}
+				    ]
+				},
+				"text": table["caption"],
+				"sentences": [],
+				"annotations": [],
+				"relations": []
+			    }
+			)
+			offset += len("".join(table["caption"]))
+
+		    if "section" in table.keys():
+			rowID = 0
+			colID = 0
+			rsection = []
+			this_offset = offset
+			for sect in table["section"]:
+
+			    resultsDict =                         {
+				"section_title_1": sect['section_name'],
+				"results_rows":[]
+			    }
+			    for resultrow in sect["results"]:
+				colID=0
+				rrow = []
+				for result in resultrow:
+				    resultDict = {
+					"id": F"T{table['identifier']}.{rowID}.{colID}",
+					"text": result
+				    }
+				    colID+=1
+				    offset+= len(str(result))
+				    rrow.append(resultDict)
+				resultsDict["results_rows"].append(rrow)
+				rowID+=1
+			    rsection.append(resultsDict)
+			tableDict['passages'].append(
+			    {
+				"offset": this_offset,
+				"infons": {
+				    "section_type": [
+					{
+					    "type": "table",
+					    "IAO_name": "table",
+					    "IAO_id": "IAO:0000306"
+					}
+				    ]
+				},
+				"columns": table.get("columns", []),
+				"results_section": rsection,
+				"sentences": [],
+				"annotations": [],
+				"relations": []
+			    }
+			)
+
+		    if "footer" in table.keys():
+			tableDict['passages'].append(
+			    {
+				"offset": offset,
+				"infons":{
+				    "section_type":[
+					{
+					    "type": "table_footer",
+					    "IAO_name": "caption",
+					    "IAO_id": "IAO:0000304"
+					}
+				    ]
+				},
+				"text": ". ".join(table["footer"]),
+				"sentences": [],
+				"annotations": [],
+				"relations": []
+			    }
+			)
+			offset += len("".join(table["footer"]))
+		    bioc_format["documents"].append(tableDict)
+		return bioc_format
+	
 	def __main(self, soup, config):
 		soup_tables = soup.find_all(config['table']['name'],config['table']['attrs'],recursive=True)
 
@@ -459,10 +623,27 @@ class table:
 			if table.find_all('tbody')==[]:
 				pop_list.append(i)
 				warnings.warn("Table {} has no data rows".format(i))
+		soup_tables1 = [soup_tables[i] for i in range(len(soup_tables)) if i in pop_list]
 		soup_tables = [soup_tables[i] for i in range(len(soup_tables)) if i not in pop_list]
 
-		# One table
 		tables = []
+		for table_num1, table1 in enumerate(soup_tables1):
+		    # caption and footer
+		    try:
+			caption1 = table1.find_next(config['table_title']['name'],config['table_title']['attrs']).get_text()
+		    except:
+			caption1 = ''
+			# warnings.warn("Unable to find table caption")
+		    try:
+			actual_caption1 = table1.next_sibling.find(config['table_caption']['name'], config['table_caption']['attrs']).get_text()
+		    except:
+			actual_caption1 = ''
+		    cur_table1 = self.__table2json4prep(table_num1, caption1, "", actual_caption1)
+		    tables+=cur_table1
+		
+		# One table
+		if soup_tables:
+			tables = []
 		for table_num, table in enumerate(soup_tables):
 			# caption and footer
 			try:
@@ -590,7 +771,10 @@ class table:
 			tables+=cur_table
 
 		table_json = {'tables':tables}
-		table_json = self.__reformat_table_json(table_json)
+		if soup_tables:
+		    table_json = self.__reformat_table_json(table_json)
+		else:
+		    table_json = self.__reformat_table_json4prep(table_json)
 		return table_json
 
 
